@@ -1,0 +1,9 @@
+product_id,product_name,brand,category,price,dimension,color
+PROD000001,Setting Spray,The Derma Co,beauty,1084.24,142x56x19 cm,Yellow
+PROD000002,T-shirt,H&M,clothing,1741.6,116x64x8 cm,White
+PROD000003,Makeup Brushes,Lakme,beauty,1090.68,10x144x49 cm,Blue
+PROD000004,Moisturizer,Forest Essentials,beauty,1856.29,23x108x81 cm,White
+PROD000006,Shoes,Yonex,sports,2655.08,190x184x89 cm,Yellow
+PROD000007,Running Shoes,Nike,sports,3629.81,23x59x99 cm,White
+PROD000008,Jeans,H&M,clothing,1729.64,93x131x97 cm,Black
+PROD000009,Moisturizer,Forest Essentials,beauty,1115.35,37x169x35 cm,Green

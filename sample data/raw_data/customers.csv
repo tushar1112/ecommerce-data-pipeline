@@ -1,0 +1,9 @@
+customer_id,customer_name,DOB,gender,email,phone,city,state,first_signup_date
+CUST000001,Triveni Iyengar,09-05-1947,Female,wakeetadevan@example.com,6231796258,Guntur,West Bengal,14-03-2023
+CUST000002,Vasana Nanda,10-11-1964,Male,pchaudhuri@example.org,6663458620,Sultan Pur Majra,Gujarat,13-07-2006
+CUST000003,Kalpit Chakraborty,05-05-2002,Female,pranitshetty@example.org,9896811632,Vellore,West Bengal,22-10-2023
+CUST000004,Jonathan Kurian,19-11-2003,Female,hbadal@example.org,6195822708,Muzaffarnagar,Uttarakhand,07-04-2025
+CUST000005,Dayamai Koshy,12-12-1986,Male,tbahl@example.com,8218397386,Faridabad,Andhra Pradesh,22-04-2023
+CUST000006,Neel Pal,25-12-1956,Male,sachdevajyoti@example.org,6015316041,Muzaffarnagar,Bihar,19-09-2008
+CUST000007,Bhavna Madan,28-05-2001,Male,reyanshkorpal@example.org,6439825098,Thiruvananthapuram,West Bengal,13-11-2023
+CUST000008,Warhi Dash,25-10-1997,Male,chaayasarraf@example.net,9523487965,Gaya,Nagaland,13-04-2026

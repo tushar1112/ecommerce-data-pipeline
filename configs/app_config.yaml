@@ -1,0 +1,27 @@
+app_name: ecommerce_pipeline
+
+paths:
+  raw:  data/raw_data/
+  Bronze: data/bronze/
+  Silver: data/silver/
+  Gold: data/gold/
+  Quality: data/quality/
+  Rejected_data_silver: data/rejected_data/silver/
+  Rejected_data_quality: data/rejected_data/quality/
+  Logs: logs/
+
+spark:
+  master: local[*]
+  shuffle_partitions: 4
+  log_level:  WARN
+  driver_memory : 2g
+
+
+files:
+  - customers.csv
+  - order_details.csv
+  - orders.csv
+  - payments.csv
+  - products.csv
+  - reviews.csv
+  - sellers.csv
