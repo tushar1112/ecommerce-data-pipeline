@@ -1,0 +1,2 @@
+batch_id,table_name,insert_count,update_count,delete_count
+BATCH_20260607_203338,order_items,328,157,39

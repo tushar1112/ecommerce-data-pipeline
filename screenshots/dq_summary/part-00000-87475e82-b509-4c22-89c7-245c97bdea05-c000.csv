@@ -1,0 +1,6 @@
+table_name,batch_id,bronze_count,silver_count,quarantine_count,rejected_percentage,status,load_type
+customers,BATCH_20260607_203338,170,98541,2,1.18,Success,INCREMENTAL
+products,BATCH_20260607_203338,120,1872,0,0.0,Success,INCREMENTAL
+orders,BATCH_20260607_203338,320,97543,2,0.62,Success,INCREMENTAL
+order_items,BATCH_20260607_203338,526,161648,2,0.38,Success,INCREMENTAL
+payments,BATCH_20260607_203338,290,99788,0,0.0,Success,INCREMENTAL

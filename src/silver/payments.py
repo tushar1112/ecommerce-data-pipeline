@@ -1,65 +1,102 @@
-import socketserver
-import os
-
-# empty object for unix features (error handle)
-if os.name == 'nt':
-    socketserver.UnixStreamServer = object
-    socketserver.UnixDatagramServer = object
-
 from pyspark.sql import Window
 from pyspark.sql.functions import *
 
 def transform_payments(df):
+    column_type_mapping = {
+        "payment_id": "string",
+        "order_id": "string",
+        "customer_id": "string",
+        "payment_date": "timestamp",
+        "payment_method": "string",
+        "payment_provider": "string",
+        "payment_amount": "double",
+        "currency": "string",
+        "payment_status": "string",
+        "transaction_reference_id": "string",
+        "refund_amount": "double",
+        "refund_date": "timestamp",
+        "created_at": "timestamp",
+        "updated_at": "timestamp",
+        "deleted_flag": "boolean",
+        "source_system": "string",
+        "record_version": "int",
+        # Bronze metadata
+        "source_table": "string",
+        "ingestion_timestamp": "timestamp",
+        "ingestion_date": "date",
+        "batch_id": "string",
+        "operation_type": "string"
+    }
+    for column_name , data_type in column_type_mapping.items():
+        df = df.withColumn(column_name,col(column_name).cast(data_type))
+
+    # drop_reason column
+    df = df.withColumn("drop_reason", lit(None).cast('string'))
+
     #1. fix invalid payment_id, order_id
     df = df.withColumn(
-        'Drop_reason',
-         when(col('order_id').isNull() | (col('payment_id').isNull()),'Blank order id/payment_id')\
-        .when(~col('order_id').startswith('ORD') | (length(col('order_id'))!=9),'Invalid order id') \
-        .when(~col('payment_id').startswith('PAY') | (length(col('payment_id'))!=9),'Invalid payment id') \
-        .otherwise(lit(None))
+        'drop_reason',
+         when((col('payment_id').isNull()) | (~col('payment_id').startswith('PAY')),lit('Invalid payment_id'))
+        .otherwise(col('drop_reason'))
     )
-    #2. fixing duplicate payment ids
-    window = Window.partitionBy('payment_id').orderBy(col('order_id').asc())
-    df= df.withColumn(
-        'ranking_payment',
-        row_number().over(window)
+    pay_window = Window.partitionBy('payment_id').orderBy(col('updated_at').desc())
+
+    df = df.withColumn(
+        'pay_rn',
+        row_number().over(pay_window)
     ).withColumn(
-        'Drop_reason',
-         when(col('Drop_reason').isNotNull(),col('Drop_reason'))\
-        .when(col('ranking_payment')>1,'Duplicate payment id')
+        'drop_reason',
+        when(col('pay_rn') > 1, lit('duplicate payment id'))
+        .otherwise(col('drop_reason'))
+    )
+
+
+    df = df.withColumn(
+        'drop_reason',
+        when(col('order_id').isNull(), lit('Invalid order id'))
+        .when(col('customer_id').isNull(), 'Invalid customer id')
+        .otherwise(col('drop_reason'))
+    )
+
+    # negative payment amount & refund amount, invalid dates
+    df = df.withColumn(
+        'drop_reason',
+        when(col('payment_amount') < 0, lit('negative payment amount'))
+        .when(col('refund_amount') < 0, lit('negative refund amount'))
+        .when(col('payment_date') > current_timestamp(),lit('future_payment_date'))
+        .when(col('refund_date') < col('payment_date'),lit('invalid refund date'))
+        .otherwise(col('drop_reason'))
     )
 
    #3. fixing payment mode
-    valid_modes = ["UPI", "Credit Card", "Debit Card","Net Banking", "Cash on Delivery", "Wallet"]
+    valid_modes = ["UPI", "CREDIT_CARD","DEBIT_CARD","NET_BANKING", "CASH_ON_DELIVERY", "WALLET"]
     df = df.withColumn(
-        'payment_mode',
-        when(col('payment_mode').isin(valid_modes),col('payment_mode'))
-        .otherwise(lit('other'))
-    )
-    #4. fixing payment date
-    df = (df.withColumnRenamed('payment_time','payment_date')
-            .withColumn('payment_date',try_to_timestamp(col('payment_date'), lit('dd-MM-yyyy HH:mm')).try_cast('date'))
-            .withColumn(
-                'Drop_reason',
-                when(col('Drop_reason').isNotNull(),col('Drop_reason'))
-                .when(col('payment_date') > current_date(),'future_payment_date')
-            ))
-
-    # df.select('payment_date').distinct().show()
-
-    df = df.drop('ranking_payment')
-
-    # fixing payment amount
-    df = df.withColumn(
-        'payment_amount',
-        col('payment_amount').try_cast('decimal(18,2)')
-    ).withColumn(
-        'Drop_reason',
-        when(col('payment_amount').isNull() | (col('payment_amount') <= 0),'invalid payment amount')
+        'payment_method',
+        when(col('payment_method').isin(valid_modes),col('payment_method'))
+        .otherwise(lit('UNKNOWN'))
     )
 
-    bad_records = df.filter(col('Drop_reason').isNotNull())  # bad record
-    df = df.filter(col('Drop_reason').isNull()).drop('Drop_reason') # good record
+    #4 flag for blank transaction id
+    df = df.withColumn(
+        'blank_transaction_id_flag',
+        when(col('transaction_reference_id').isNull(),lit(True))
+        .otherwise(lit(False))
+    )
 
+    df = df.withColumn(
+        'silver_processed_timestamp', current_timestamp()
+    )
 
-    return df, bad_records
+    bad_records = (
+        df.filter(col("drop_reason").isNotNull())
+        .withColumnRenamed("drop_reason", "rejection_reason")
+        .withColumn("quarantine_timestamp", current_timestamp())
+        .drop("pay_rn")
+    )
+
+    clean_df = (
+        df.filter(col("drop_reason").isNull())
+        .drop("pay_rn", "drop_reason")
+    )
+
+    return clean_df, bad_records

@@ -1,0 +1,14 @@
+pyspark==4.1.0
+pandas==2.2.2
+pyyaml==6.0.1
+faker==26.0.1
+
+
+1. categories
+2. suppliers
+3. warehouses
+4. products
+5. customers
+6. inventory
+7. orders + order_items
+8. payments

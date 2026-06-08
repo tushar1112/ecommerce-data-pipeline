@@ -1,27 +1,47 @@
 app_name: ecommerce_pipeline
 
 paths:
-  raw:  data/raw_data/
-  Bronze: data/bronze/
-  Silver: data/silver/
-  Gold: data/gold/
-  Quality: data/quality/
-  Rejected_data_silver: data/rejected_data/silver/
-  Rejected_data_quality: data/rejected_data/quality/
-  Logs: logs/
+  raw_full: data/raw_data/full_load
+  raw_inc: data/raw_data/increment_load
+  raw: data/raw_data/
+  bronze: data/bronze/
+  silver: data/silver/
+  temp: data/silver/tempraray
+  gold: data/gold/
+  audit: data/audit/
+  rejected_data_silver: data/quarantine_records/
+  logs: logs/
+  watermark: data/audit/watermark/
+  screenshot: screenshots/
+  dashboard: dashboard/
 
 spark:
   master: local[*]
-  shuffle_partitions: 4
+  shuffle_partitions: 8
   log_level:  WARN
-  driver_memory : 2g
-
+  driver_memory : 4g
 
 files:
   - customers.csv
-  - order_details.csv
-  - orders.csv
-  - payments.csv
+  - categories.csv
+  - suppliers.csv
+  - warehouses.csv
   - products.csv
-  - reviews.csv
-  - sellers.csv
+  - inventory.csv
+  - orders.csv
+  - order_items.csv
+  - payments.csv
+
+files_inc:
+  customers:
+      joining_key: customer_id
+  products:
+      joining_key: product_id
+  orders:
+    joining_key: order_id
+  order_items:
+    joining_key: order_id
+  payments:
+    joining_key: payment_id
+
+load_type: INC

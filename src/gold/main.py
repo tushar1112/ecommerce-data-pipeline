@@ -8,11 +8,7 @@ if os.name == 'nt':
     socketserver.UnixDatagramServer = object
 
 from src.common.bootstrap import init
-from src.gold.customer_mart import customer_mart
-from src.gold.fact_sales import build_fact_sales
-from src.gold.product_performance_mart import product_performance_mart
-from src.gold.sellers_performance import sellers_performance_mart
-
+from src.gold.transformation import gold_transformations
 
 def run():
     logger = None
@@ -21,13 +17,7 @@ def run():
         logger.info("***    Gold layer execution started   ***")
         logger.info("***    Spark session created   ***")
 
-        Quality_path = config["paths"]["Quality"]
-        gold_path = config["paths"]["Gold"]
-
-        build_fact_sales(spark, logger, Quality_path, gold_path)
-        customer_mart(spark, logger, gold_path)
-        product_performance_mart(spark, logger, Quality_path, gold_path)
-        sellers_performance_mart(spark, logger, Quality_path, gold_path)
+        gold_transformations(spark, logger, config)
 
         if spark:
             spark.stop()
@@ -37,6 +27,7 @@ def run():
 
     except Exception as e:
         logger.error(f"Gold Layer execution failed :{str(e)}")
+        print(f"Gold Layer execution failed :{str(e)}")
         raise
 
 if __name__ == "__main__":

@@ -8,55 +8,34 @@ if os.name == 'nt':
     socketserver.UnixDatagramServer = object
 
 from src.common.bootstrap import init
-from src.silver.transformations import process_file
+from src.silver.transformations import silver_full_processing, silver_incremental_processing
 
 
 def run():
+
     logger = None
+
     try:
-
         config, logger, spark = init()
-        logger.info("***    Bronze layer execution started   ***")
+        logger.info("***    Silver layer execution started   ***")
         logger.info("***    Spark session created   ***")
+        load_type = config["load_type"]
 
-        bronze_path = config["paths"]["Bronze"]
-        silver_path = config["paths"]["Silver"]
-        reject_path_silver = config["paths"]["Rejected_data_silver"]
-        files = config["files"]
+        if load_type == "FULL_LOAD":
+            silver_full_processing(spark,logger,config)
+        elif load_type == "INC":
+            silver_incremental_processing(spark,logger,config)
+        else:
+            raise ValueError(f"Invalid load_type: {load_type}")
 
-        silver_results = {}
-        for file_name in files:
-            dataset_name = file_name.replace('.csv', '')
-            read_path_ = f'{bronze_path}/{dataset_name}'
-            silver_path_ = f'{silver_path}/{dataset_name}'
-            reject_path_ = f'{reject_path_silver}/{dataset_name}'
-            status = process_file(
-                spark=spark,
-                logger=logger,
-                read_path=read_path_,
-                silver_path=silver_path_,
-                reject_path=reject_path_,
-                database_name=dataset_name
-            )
-            silver_results[dataset_name] = status
-
-        logger.info("Silver layer Processing Summary")
-        for dataset, status in silver_results.items():
-            if status:
-                logger.info(
-                    f"{dataset}: SUCCESS"
-                )
-            else:
-                logger.error(
-                    f"{dataset}: FAILED"
-                )
-
+        # ending sparks session
         if spark:
             spark.stop()
             if logger:
-                logger.info("******  spark session stopped  ******")
+                logger.info("***    spark session stopped   ***")
 
-        logger.info("Silver layer Processing ended")
+        #closing silver processing
+        logger.info("***    Silver layer Processing ended   ***")
 
     except Exception as e:
         logger.error(f" Silver Layer Processing failed : {str(e)}")

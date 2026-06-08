@@ -1,38 +1,11 @@
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
 from datetime import datetime, timedelta
-import subprocess
 
+# Note: Keeping PROJECT_PATH for reference, but using the explicit 
+# Windows path syntax inside the bash commands to prevent directory errors.
 PROJECT_PATH = "/mnt/c/Users/motir/Desktop/E-commerce Project"
-
-# ---------- TASK FUNCTIONS ----------
-
-def run_bronze():
-    subprocess.run(
-        ["python3", f"{PROJECT_PATH}/src/bronze/main.py"],
-        check=True
-    )
-
-def run_silver():
-    subprocess.run(
-        ["python3", f"{PROJECT_PATH}/src/silver/main.py"],
-        check=True
-    )
-
-def run_quality():
-    subprocess.run(
-        ["python3", f"{PROJECT_PATH}/src/quality_layer/main.py"],
-        check=True
-    )
-
-def run_gold():
-    subprocess.run(
-        ["python3", f"{PROJECT_PATH}/src/gold/main.py"],
-        check=True
-    )
-
-# ---------- DAG CONFIG ----------
 
 default_args = {
     "owner": "Tushar",
@@ -50,27 +23,26 @@ with DAG(
 
     start = EmptyOperator(task_id="start")
 
-    bronze = PythonOperator(
+    # ---------- STABLE BASH COMMANDS USING .venv311 ----------
+
+    bronze = BashOperator(
         task_id="bronze_ingestion",
-        python_callable=run_bronze
+        # Navigates to project folder, then forces execution via your .venv311 environment
+        bash_command='/mnt/c/Windows/System32/cmd.exe /c "cd /d C:\\Users\\motir\\Desktop\\E-commerce Project && .venv311\\Scripts\\python.exe src\\bronze\\main.py"'
     )
-
-    silver = PythonOperator(
+ 
+    silver = BashOperator(
         task_id="silver_transformation",
-        python_callable=run_silver
+        # Solves both the memory/connection issue and the 'yaml' module missing error
+        bash_command='/mnt/c/Windows/System32/cmd.exe /c "cd /d C:\\Users\\motir\\Desktop\\E-commerce Project && .venv311\\Scripts\\python.exe src\\silver\\main.py"'
     )
 
-    quality = PythonOperator(
-        task_id="data_quality_checks",
-        python_callable=run_quality
-    )
-
-    gold = PythonOperator(
+    gold = BashOperator(
         task_id="gold_aggregation",
-        python_callable=run_gold
+        bash_command='/mnt/c/Windows/System32/cmd.exe /c "cd /d C:\\Users\\motir\\Desktop\\E-commerce Project && .venv311\\Scripts\\python.exe src\\gold\\main.py"'
     )
 
     end = EmptyOperator(task_id="end")
 
     # ---------- FLOW ----------
-    start >> bronze >> silver >> quality >> gold >> end
+    start >> bronze >> silver >> gold >> end
