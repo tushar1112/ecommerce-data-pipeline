@@ -1,46 +1,58 @@
-# E-Commerce Data Engineering Pipeline
+# E-Commerce Data Engineering Pipeline (v2.0) 🚀
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![PySpark](https://img.shields.io/badge/PySpark-Big%20Data-orange)
+![Airflow](https://img.shields.io/badge/Apache%20Airflow-Orchestration-green)
+![Parquet](https://img.shields.io/badge/Storage-Parquet-purple)
+![Power BI](https://img.shields.io/badge/Dashboard-Power%20BI-yellow)
+![Architecture](https://img.shields.io/badge/Architecture-Bronze%20%7C%20Silver%20%7C%20Gold-brightgreen)
 
-## Project Overview
+## 📌Project Overview
 
-This project is an end-to-end **E-Commerce Data Engineering Pipeline** built using **Python, PySpark, SQL, Parquet, and Medallion Architecture**.
+An end-to-end data pipeline built using Python, PySpark, Apache Airflow, Parquet, and Power BI applying the Medallion Architecture. This platform ingests raw e-commerce files, runs schemas through automated quarantine filters, executes stateful Change Data Capture (CDC) processing, builds an analytics Star Schema, and serves downstream executive reporting.
 
-The pipeline processes raw e-commerce data from multiple source files, applies data cleaning and validation, handles bad records through quarantine, performs CDC-based incremental processing, and builds analytics-ready Gold layer tables using dimensional modeling.
+## ⭐ Key features
+- Built an end-to-end Bronze → Silver → Gold Medallion Architecture pipeline
+- Implemented full load and incremental CDC processing
+- Designed reusable metadata-driven merge/upsert logic
+- Implemented SCD Type 2 for customer and product dimensions
+- Built incremental refresh logic for fact_sales and fact_payments
+- Wrote rejected Silver records to a dedicated quarantine location
+- Added referential integrity checks across business entities
+- Added watermark-based batch tracking
+- Added CDC metadata auditing for inserts, updates, and deletes
+- Orchestrated the pipeline using Apache Airflow DAGs
+- Built interactive Power BI dashboards for Sales, Product analytics
 
-The project is designed to demonstrate production-style Data Engineering concepts such as:
 
-* Full load and incremental load processing
-* CDC merge/upsert logic
-* Data quality validation
-* Quarantine handling
-* Referential integrity checks
-* SCD Type 2 dimensions
-* Incremental fact table refresh
-* Watermark-based batch tracking
-* CDC metadata auditing
+## 📐 Architecture
 
----
 
-## Architecture
 
-![E-Commerce Data Pipeline Architecture](docs/architecture.png)
+<img width="1400" height="700" alt="architecture" src="https://github.com/user-attachments/assets/d3258c05-9d3b-4341-8154-798ca9b59fca" />
 
+<br>
+<br>
 The project follows a layered Medallion Architecture:
 
 ```text
-Raw Layer
-   ↓
-Bronze Layer
-   ↓
-Silver Layer
-   ↓
-Gold Layer
-   ↓
-Analytics Layer
+Raw CSV Files
+     ↓
+🥉 Bronze Layer
+     ↓
+🥈 Silver Layer
+     └── rejected records → quarantine location for backtracking
+     ↓
+🥇 Gold Layer
+     ↓
+📊 Power BI Dashboards
 ```
+Apache Airflow orchestrates the pipeline layer by layer:
+```text
+Airflow DAG → Bronze → Silver → Gold → Power BI Export
+```
+<br>
 
----
-
-## Tech Stack
+## 🛠️ Technology Stack
 
 | Area                | Tools / Technologies                |
 | ------------------- | ----------------------------------- |
@@ -52,10 +64,11 @@ Analytics Layer
 | Audit & Monitoring  | Watermark, DQ Summary, CDC Metadata |
 | Dashboard           | Power BI                            |
 | Version Control     | Git / GitHub                        |
+| Orchestration       | Apache airflow                      |
 
----
+<br>
 
-## Data Sources
+## 📦 Data Sources
 
 The pipeline uses synthetic e-commerce datasets representing real-world business entities.
 
@@ -92,7 +105,7 @@ DELETE
 
 ---
 
-## Project Structure
+## 🗂️ Project Structure
 
 ```text
 E-commerce Project/
@@ -115,15 +128,16 @@ E-commerce Project/
 │       └── cdc_metadata/
 │
 ├── data_generation/
-│   └── generators/
-│       ├── customers_generator.py
-│       ├── products_generator.py
-│       ├── orders_order_items_generator.py
-│       ├── payments_generator.py
-│       ├── customers_incremental_generator.py
-│       ├── products_incremental_generator.py
-│       ├── orders_order_items_incremental_generator.py
-│       └── payments_incremental_generator.py
+│   └── generators_full_load/
+│       ├── customers.py
+│       ├── products.py
+│       ├── orders_order_items_.py
+│       ├── payments.py
+|   └── generators_incremental_load/
+│       ├── customers_incremental.py
+│       ├── products_incremental.py
+│       ├── orders_order_items_incremental.py
+│       └── payments_incremental.py
 │
 ├── src/
 │   ├── common/
@@ -160,256 +174,76 @@ E-commerce Project/
 │       ├── fact_payments.py
 │       └── main.py
 │
-├── docs/
-│   └── architecture.png
+├── screenshots/
 │
 │── test/
 │   └── testing.py
 ├── requirements.txt
 └── README.md
 ```
+## 🌬️ Airflow Orchestration
+Apache Airflow is used for layer-wise orchestration of the pipeline.
+<img width="1600" height="600" alt="airflow" src="https://github.com/user-attachments/assets/d36cd294-a6f0-4bd9-b372-5139a91dca7e" />
+Airflow Tasks
+Task	Responsibility
+- 🥉 Bronze Task: Ingest raw CSV files and write Parquet data.
+
+- 🥈 Silver Task: Clean, validate, deduplicate, apply CDC, and route non-conforming records to the quarantine location.
+
+- 🥇 Gold Task: Build SCD Type 2 dimensions and transactional fact tables.
+
+- 🧾 Audit Task: Manage watermark thresholds, update data quality summaries, and record CDC operation metadata logs.
+
+- 📊 Power BI Export Task: Serve analytics-ready Gold outputs to the dashboard plane for executive reporting.
+
+
+
 
 ---
+## ⚙️ Pipeline Layers
 
-## Pipeline Layers
-
-## 1. Raw Layer
-
-The Raw layer contains source CSV files.
-
-It includes:
-
-* Full load files
-* Incremental CDC files
-* Dirty data simulation for realistic validation scenarios
-
-Examples of dirty data include:
-
-* Invalid customer IDs
-* Invalid product IDs
-* Bad date formats
-* Negative quantities
-* Invalid prices
-* Missing values
-* Duplicate business keys
-
----
-
-## 2. Bronze Layer
-
-The Bronze layer stores raw ingested data in Parquet format.
-
-### Key Responsibilities
-
-* Read CSV source files
-* Add audit columns
-* Add batch ID
-* Add source file information
-* Add ingestion timestamp
-* Preserve raw data without heavy transformations
-
-### Audit Columns Added
-
+### 🥉 Bronze Layer
+Raw ingestion layer. Reads CSV files, adds audit metadata, and stores data as Parquet with minimal transformation.
+Audit columns added:
 ```text
-source_table/file
+source_file
 ingestion_timestamp
 ingestion_date
 batch_id
 ```
-
-### Load Types
-
+Load behavior:
 ```text
-FULL         → overwrite Bronze table
-INCREMENTAL  → append CDC records to Bronze table
+FULL        → overwrite Bronze table
+INCREMENTAL → append CDC records
 ```
-
+### 🥈 Silver Layer
+Cleaned and validated business layer. Applies schema enforcement, type casting, deduplication, CDC merge/upsert logic, and referential integrity checks.
+Bad records are not treated as a separate pipeline layer. They are written from Silver processing to:
+```text
+data/quarantine/silver/
+```
+Rejected records include:
+```text
+rejection_reason
+processing_timestamp
+```
+### 🥇 Gold Layer
+Analytics-ready layer for Power BI. Builds Star Schema tables from clean Silver data.
+Dimensions:
+```text
+dim_customer    → SCD Type 2 customer dimension
+dim_product     → SCD Type 2 product dimension
+dim_date        → calendar dimension
+```
+Facts:
+```text
+fact_sales      → 1 row per order item
+fact_payments   → 1 row per payment transaction
+```
 ---
 
-## 3. Silver Layer
 
-The Silver layer contains cleaned, validated, and current-state business tables.
-
-### Key Responsibilities
-
-* Schema enforcement
-* Type casting
-* Data standardization
-* Data quality checks
-* Deduplication
-* Quarantine handling
-* Referential integrity validation
-* CDC merge/upsert logic
-
-### Silver CDC Handling
-
-For incremental data:
-
-```text
-INSERT  → add new record
-UPDATE  → replace current record
-DELETE  → soft delete using deleted_flag = true
-```
-
-Silver stores the latest/current version of each business entity.
-
-Example:
-
-```text
-customers
-products
-orders
-order_items
-payments
-inventory
-```
-
----
-
-## Quarantine Layer
-
-Invalid records are moved to the Quarantine layer instead of being silently dropped.
-
-Examples:
-
-* Invalid customer ID
-* Invalid email
-* Invalid phone number
-* Invalid product reference
-* Invalid order reference
-* Duplicate business key
-* Failed referential integrity check
-
-Each rejected record contains a rejection reason and processing timestamp.
-
----
-
-## Referential Integrity Checks
-
-The pipeline validates parent-child relationships before writing final Silver tables.
-
-Examples:
-
-| Child Table            | Parent Table            |
-| ---------------------- | ----------------------- |
-| products.category_id   | categories.category_id  |
-| products.supplier_id   | suppliers.supplier_id   |
-| inventory.product_id   | products.product_id     |
-| inventory.warehouse_id | warehouses.warehouse_id |
-| orders.customer_id     | customers.customer_id   |
-| order_items.order_id   | orders.order_id         |
-| order_items.product_id | products.product_id     |
-| payments.order_id      | orders.order_id         |
-
-Invalid child records are moved to quarantine.
-
----
-
-## 4. Gold Layer
-
-The Gold layer contains analytics-ready tables modeled using a Star Schema.
-
-## Dimension Tables
-
-### dim_customer
-
-Tracks customer attributes and supports SCD Type 2.
-
-SCD2 columns include:
-
-```text
-city
-state
-customer_status
-marketing_opt_in
-```
-
-SCD metadata columns:
-
-```text
-effective_start_date
-effective_end_date
-is_current
-```
-
-### dim_product
-
-Tracks product attributes and supports SCD Type 2.
-
-SCD2 columns include:
-
-```text
-category_id
-supplier_id
-mrp
-selling_price
-cost_price
-product_status
-```
-
-### dim_date
-
-Calendar dimension used for date-based analytics.
-
-Includes:
-
-```text
-date_key
-full_date
-year
-quarter
-month
-month_name
-week_of_year
-day_of_week
-is_weekend
-```
-
----
-
-## Fact Tables
-
-### fact_sales
-
-Grain:
-
-```text
-1 row per order item
-```
-
-Measures:
-
-```text
-quantity
-unit_price
-gross_amount
-discount_amount
-final_price
-estimated_shipping_cost
-```
-
-Supports incremental refresh by rebuilding only affected `order_id` records.
-
-### fact_payments
-
-Grain:
-
-```text
-1 row per payment transaction
-```
-
-Measures:
-
-```text
-payment_amount
-refund_amount
-```
-
-Supports incremental refresh by rebuilding only affected `payment_id` records.
-
----
-
-## CDC and Incremental Processing
+## 🔁 CDC & Incremental Processing
 
 The project supports CDC-based incremental processing for:
 
@@ -433,7 +267,7 @@ Silver CDC Merge
 Gold SCD2 / Incremental Fact Refresh
 ```
 
-### CDC Operation Types
+CDC Operation Types
 
 | Operation | Behavior                               |
 | --------- | -------------------------------------- |
@@ -441,9 +275,7 @@ Gold SCD2 / Incremental Fact Refresh
 | UPDATE    | Updates current-state record           |
 | DELETE    | Soft deletes record using deleted_flag |
 
----
-
-## SCD Type 2 Implementation
+### SCD Type 2 Implementation
 
 SCD Type 2 is implemented for:
 
@@ -451,9 +283,7 @@ SCD Type 2 is implemented for:
 dim_customer
 dim_product
 ```
-
 When a tracked attribute changes:
-
 ```text
 1. Existing current row is expired
 2. effective_end_date is updated
@@ -470,93 +300,34 @@ Example:
 
 ---
 
-## Audit and Monitoring
+## 🧾 Audit & Monitoring
 
-## Watermark Table
-
+### 📍Watermark
 Tracks the last successfully processed batch for each layer and table.
+<br>
+<img width="500" height="200" alt="watermark" src="https://github.com/user-attachments/assets/6675800e-913c-486f-bb15-c5ca864ffc42" />
 
-Columns:
+### ✅ DQ Summary
+Tracks Bronze count, Silver count, rejected count, rejected percentage, and processing status.
+<br>
+<img width="500" height="200" alt="dq_summary" src="https://github.com/user-attachments/assets/46c2be19-260f-433c-9b9d-e663a60d9bd1" />
 
-```text
-table_name
-layer
-last_batch_id
-status
-last_processed_timestamp
-updated_at
-```
-![Watermark](screenshots/watermark.png)
+### 🔄 CDC Metadata
+Tracks insert, update, and delete counts for each incremental batch.
+<br>
+<img width="500" height="200" alt="cdc_metadata" src="https://github.com/user-attachments/assets/0e0e352b-37e5-4f8a-a22d-c1a8e6441687" />
 
-Used for:
-
-* Batch tracking
-* Failure recovery
-* Preventing duplicate processing
-* End-to-end lineage
 
 ---
 
-## DQ Summary
-
-Tracks data quality results for Silver processing.
-
-Columns:
-
-```text
-batch_id
-table_name
-bronze_count
-silver_count
-quarantine_count
-rejected_percentage
-status
-```
-
-![DQ Summary](screenshots/dq_summary.png)
-
-Used for:
-
-* Data quality monitoring
-* Reconciliation
-* Identifying bad data trends
-
----
-
-## CDC Metadata
-
-Tracks CDC operation counts for incremental batches.
-
-Columns:
-
-```text
-batch_id
-table_name
-insert_count
-update_count
-delete_count
-processed_timestamp
-```
-![CDC Metadata](screenshots/cdc_metadata.png)
-
-Used for:
-
-* CDC auditing
-* Incremental load monitoring
-* Understanding daily data changes
-
----
-
-## Power BI Dashboard
+## Power BI Dashboard (Basic)
 
 ### Sales Overview
-![Sales Overview](screenshots/powerbi_sales_overview.png)
+<img width="1000" height="500" alt="image" src="https://github.com/user-attachments/assets/de9f376f-23d6-40d7-81a5-034deeeb20d0" />
 
-### Product Performance
-![Product Performance](screenshots/powerbi_product_performance.png)
+### Product Performance (**different dataset)
+<img width="1000" height="500" alt="image" src="https://github.com/user-attachments/assets/c4f59be0-40fa-44f2-8c9c-c16faef8dd0a" />
 
-### Payment Analysis
-![Payment Analysis](screenshots/powerbi_payment_analysis.png)
 
 
 ## How to Run
@@ -659,22 +430,6 @@ files_inc:
   orders:
     joining_key: order_id
 ```
-
----
-
-## Key Project Highlights
-
-* Built an end-to-end Medallion Architecture pipeline
-* Implemented full load and incremental CDC processing
-* Designed reusable metadata-driven incremental merge logic
-* Implemented SCD Type 2 for customer and product dimensions
-* Built incremental fact refresh for sales and payments
-* Added quarantine handling for rejected records
-* Added referential integrity checks across business entities
-* Added watermark-based batch tracking
-* Added CDC metadata for insert/update/delete auditing
-* Created analytics-ready Gold layer using Star Schema
-
 ---
 
 ## Future Enhancements
